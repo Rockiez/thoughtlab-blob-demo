@@ -281,7 +281,7 @@ void main() {
     vec3 refracted = refract(vec3(0.0, 0.0, -2.0), vNormal, 1.0 / 2.0);
     screenUv += refracted.xy * uRefraction * 0.35;
 
-    vec3 cubeTex = textureCube(tMap, vec3(screenUv, 0.0)).rgb * 1.5;
+    vec3 cubeTex = textureCube(tMap, vec3(screenUv, 0.0)).rgb;
     vec3 texCube = screen(saturation(cubeTex, 5.0), vec3(0.0, 0.0, 0.0));
     vec3 texCubeFresnel = screen(mix(vec3(0.0, 0.0, 0.0), texCube, vFresnelColor), vFresnelColor);
 
@@ -316,7 +316,6 @@ void main() {
     mixed.g = mix(mix(bw.g, mixed.g, uGreenSaturation), mix(bw.g, shifted.g, uGreenSaturation), uGreenHue);
     mixed.b = mix(mix(bw.b, mixed.b, uBlueSaturation), mix(bw.b, shifted.b, uBlueSaturation), uBlueHue);
     mixed = saturation(mixed, uSaturation);
-    mixed = mixed * 1.6; // Boost overall reflection brightness to make it light and airy
 
     vec4 toImg = texture2D(tRenderHover, screenUv);
     vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
@@ -328,11 +327,15 @@ void main() {
     float cosTheta = clamp(dot(-ray, vNormal), 0.0, 1.0);
     float waterFresnel = 0.04 + 0.96 * pow(1.0 - cosTheta, 5.0);
     
+    // Add soft ambient light to the reflections to simulate a bright room environment,
+    // lifting the dark tones and giving the bubble an airy, translucent appearance.
+    vec3 brightMixed = mix(mixed, vec3(0.95), 0.15);
+    
     // Adapt the environment reflections to the background color. Since the cubemap environment 
     // is dark/black, reflecting it directly on a light background causes dark rings.
     // By blending the reflection base with the page background based on the reflection intensity,
     // we preserve the beautiful colored highlights (blue/purple) while removing the black base.
-    vec3 reflectionColor = mix(background, mixed + extraFresnel, clamp(length(mixed + extraFresnel), 0.0, 1.0));
+    vec3 reflectionColor = mix(background, brightMixed + extraFresnel, clamp(length(brightMixed + extraFresnel), 0.0, 1.0));
     
     vec3 mixedBackground = mix(background, reflectionColor, waterFresnel);
 
