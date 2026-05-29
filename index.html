@@ -80,12 +80,19 @@
             </div>
         </section>
 
-        <!-- SECTION 3: ABOUT (Size Change Trigger) -->
-        <section class="section about-section" data-gl-size="6">
-            <div class="container text-center">
-                <span class="label" data-gl-text>Scroll Activation</span>
-                <h2 data-gl-text>Size Scaling</h2>
-                <p class="about-text" data-gl-text>Inside this section, the metaball blob expands automatically to size 0.6 (default is 0.275), simulating the about section scaling effect.</p>
+        <!-- SECTION 3: ABOUT (Size Change Trigger & Auto Snap) -->
+        <section class="section about-section" data-gl-size="6" data-gl-scroll-snap="#about-image-target">
+            <div class="container about-grid">
+                <div class="about-text-content">
+                    <span class="label" data-gl-text>Scroll Snap Showcase</span>
+                    <h2 data-gl-text>Auto-Snapping & Image</h2>
+                    <p class="about-text" data-gl-text>Inside this section, the metaball blob expands automatically to size 0.6. Additionally, it glides and snaps into the circular frame on the right, displaying the project illustration inside itself. Scroll away to release it.</p>
+                </div>
+                <div class="about-image-frame">
+                    <div id="about-image-target" class="image-target-box" data-gl-target-img="./static/images/project_beta.png">
+                        <span class="placeholder-text" data-gl-text>Bubble Snaps Here</span>
+                    </div>
+                </div>
             </div>
         </section>
 

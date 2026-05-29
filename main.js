@@ -445,6 +445,10 @@ class WebGLApp {
     this.hoveredCard = null;
     this.hoveredImg = null;
 
+    // Scroll Snap Tracking
+    this.scrollSnapTarget = null;
+    this.scrollSnapImg = null;
+
     // Sizing control
     this.targetBlobSize = W.uSizeDefault;
     this.currentBlobSize = W.uSizeDefault;
@@ -770,21 +774,72 @@ class WebGLApp {
     window.addEventListener('resize', () => this.resize());
   }
 
-  // --- Scroll triggers for dynamic size scaling ---
+  // --- Scroll triggers for dynamic size scaling and auto-snapping ---
   checkScrollTriggers() {
+    // If the user is actively hovering over a mouse-interactive card, prioritize mouse-snap
+    if (this.hoveredCard) return;
+
     const sections = document.querySelectorAll('[data-gl-size]');
     let activeSize = W.uSizeDefault;
+    let newScrollSnapTarget = null;
+    let snapImgObj = null;
 
     sections.forEach(sec => {
       const rect = sec.getBoundingClientRect();
-      // If section is in the middle of the viewport
-      if (rect.top < window.innerHeight / 2 && rect.bottom > window.innerHeight / 2) {
+      // Check if section is active (taking up the middle band of the viewport)
+      if (rect.top < window.innerHeight * 0.6 && rect.bottom > window.innerHeight * 0.4) {
         const sizeVal = parseFloat(sec.getAttribute('data-gl-size'));
-        activeSize = sizeVal / 10.0; // original logic: sizeVal / 10
+        activeSize = sizeVal / 10.0;
+
+        // Check for scroll-snap target in active section
+        const snapSelector = sec.getAttribute('data-gl-scroll-snap');
+        if (snapSelector) {
+          const targetEl = document.querySelector(snapSelector);
+          if (targetEl) {
+            newScrollSnapTarget = targetEl;
+            const imgPath = targetEl.getAttribute('data-gl-target-img');
+            if (imgPath) {
+              if (!this.hoverImageCache[imgPath]) {
+                const img = new Image();
+                img.src = imgPath;
+                this.hoverImageCache[imgPath] = img;
+              }
+              snapImgObj = this.hoverImageCache[imgPath];
+            }
+          }
+        }
       }
     });
 
     this.targetBlobSize = activeSize;
+
+    // Handle scroll-snapping alignment and images
+    if (newScrollSnapTarget) {
+      this.scrollSnapTarget = newScrollSnapTarget;
+      this.scrollSnapImg = snapImgObj;
+      
+      const rect = newScrollSnapTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      this.snapTarget = new THREE.Vector2(
+        centerX / window.innerWidth - 0.5,
+        -(centerY / window.innerHeight) + 0.5
+      );
+      
+      if (snapImgObj) {
+        this.updateHoverImageCanvas(snapImgObj, rect);
+        this.targetHoverOpacity = 1.0;
+        this.targetBlobSize = W.BlobSizeHover * activeSize;
+      }
+    } else {
+      if (this.scrollSnapTarget) {
+        this.scrollSnapTarget = null;
+        this.scrollSnapImg = null;
+        this.snapTarget = null;
+        this.targetHoverOpacity = 0.0;
+      }
+    }
   }
 
   resize() {
@@ -858,10 +913,23 @@ class WebGLApp {
     this.currentHoverOpacity = lerp(this.currentHoverOpacity, this.targetHoverOpacity, 0.1);
     this.mat.uniforms.uRenderHoverOpacity.value = this.currentHoverOpacity;
 
-    // Redraw the hover image every frame if a card is active to keep it aligned during scrolls and snaps
+    // Redraw the hover image every frame if a card or scroll-snap target is active
     if (this.hoveredCard && this.hoveredImg) {
       const rect = this.hoveredCard.getBoundingClientRect();
       this.updateHoverImageCanvas(this.hoveredImg, rect);
+    } else if (this.scrollSnapTarget && this.scrollSnapImg) {
+      const rect = this.scrollSnapTarget.getBoundingClientRect();
+      this.updateHoverImageCanvas(this.scrollSnapImg, rect);
+      
+      // Update coordinates continuously on scroll to follow the moving frame
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      if (this.snapTarget) {
+        this.snapTarget.set(
+          centerX / window.innerWidth - 0.5,
+          -(centerY / window.innerHeight) + 0.5
+        );
+      }
     }
 
     // Update uniforms

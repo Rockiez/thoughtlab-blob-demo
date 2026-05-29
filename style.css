@@ -209,4 +209,52 @@ h2 {
 @media (max-width: 768px) {
     .cases-grid { grid-template-columns: 1fr; }
     .section { padding: 80px 20px; }
+    .about-grid { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+    .about-text-content { max-width: 100%; }
+}
+
+/* About Grid Layout & Showcase Frame */
+.about-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 60px;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+}
+
+.about-text-content {
+    max-width: 600px;
+}
+
+.about-image-frame {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-target-box {
+    position: relative;
+    width: 280px;
+    height: 280px;
+    border: 2px dashed rgba(26, 26, 46, 0.15);
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(26, 26, 46, 0.02);
+    transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.image-target-box:hover {
+    border-color: rgba(26, 26, 46, 0.3);
+    background: rgba(26, 26, 46, 0.04);
+}
+
+.image-target-box .placeholder-text {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #999;
 }
