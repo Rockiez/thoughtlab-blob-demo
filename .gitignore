@@ -1,0 +1,6 @@
+# Debugging screenshots
+screenshot*.png
+
+# OS metadata
+.DS_Store
+Thumbs.db

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL Metaball Blob & Refraction Page</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script>
+    // Console log redirection for user browser verification
+    window.addEventListener('DOMContentLoaded', () => {
+      const debugDiv = document.createElement('div');
+      debugDiv.id = 'debug-div';
+      debugDiv.style.cssText = 'position:fixed;bottom:10px;right:10px;background:rgba(0,0,0,0.85);color:#fff;z-index:999999;max-width:400px;max-height:200px;overflow-y:auto;font-family:monospace;font-size:10px;padding:10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);pointer-events:auto;';
+      debugDiv.innerHTML = '<div style="font-weight:bold;margin-bottom:5px;border-bottom:1px solid #444;padding-bottom:3px;">Console Monitor</div>';
+      document.body.appendChild(debugDiv);
+
+      window.onerror = function(msg, url, line, col, error) {
+        debugDiv.innerHTML += `<div style="color:#ff6b6b;margin-bottom:3px;">[ERROR] ${msg} (${line}:${col})</div>`;
+      };
+      
+      const _warn = console.warn, _error = console.error;
+      console.warn = function() {
+        _warn.apply(console, arguments);
+        const msg = Array.from(arguments).join(' ');
+        debugDiv.innerHTML += `<div style="color:#feca57;margin-bottom:3px;">[WARN] ${msg}</div>`;
+      };
+      console.error = function() {
+        _error.apply(console, arguments);
+        const msg = Array.from(arguments).join(' ');
+        debugDiv.innerHTML += `<div style="color:#ff6b6b;margin-bottom:3px;">[ERROR] ${msg}</div>`;
+      };
+    });
+    </script>
+</head>
+<body>
+    <!-- Fixed WebGL Background canvas overlay -->
+    <div id="gl"></div>
+    <div class="gl-blob"></div>
+
+    <!-- Scrollable content sections -->
+    <div class="scroll-container">
+        <!-- SECTION 1: HERO -->
+        <section class="section hero-section">
+            <div class="container text-center">
+                <span class="label" data-gl-text>WebGL Interactive Experiment</span>
+                <h1 data-gl-text>Metaball Refraction</h1>
+                <p class="subtitle" data-gl-text>Scroll down to see snaps, hovers, and size scaling</p>
+                <div class="scroll-indicator" data-gl-text>Scroll Down ↓</div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CASES GRID -->
+        <section class="section cases-section">
+            <div class="container">
+                <h2 class="section-title" data-gl-text>Selected Work</h2>
+                <p class="section-desc" data-gl-text>Hover to see custom image refraction & snap the bubble to target centers</p>
+                
+                <div class="cases-grid">
+                    <!-- Project Alpha Card (Snap & Hover Image 1) -->
+                    <div class="case-card" data-gl-snap data-gl-hover-img="./static/images/project_alpha.png">
+                        <div class="case-card-inner">
+                            <span class="case-num" data-gl-text>01</span>
+                            <h3 data-gl-text>Project Alpha</h3>
+                            <p data-gl-text>Futuristic glass neon render composition</p>
+                        </div>
+                    </div>
+
+                    <!-- Project Beta Card (Snap & Hover Image 2) -->
+                    <div class="case-card" data-gl-snap data-gl-hover-img="./static/images/project_beta.png">
+                        <div class="case-card-inner">
+                            <span class="case-num" data-gl-text>02</span>
+                            <h3 data-gl-text>Project Beta</h3>
+                            <p data-gl-text>Fluid organic bubble emerald composition</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: ABOUT (Size Change Trigger) -->
+        <section class="section about-section" data-gl-size="6">
+            <div class="container text-center">
+                <span class="label" data-gl-text>Scroll Activation</span>
+                <h2 data-gl-text>Size Scaling</h2>
+                <p class="about-text" data-gl-text>Inside this section, the metaball blob expands automatically to size 0.6 (default is 0.275), simulating the about section scaling effect.</p>
+            </div>
+        </section>
+
+        <!-- SECTION 4: CONTACT & FOOTER -->
+        <section class="section footer-section">
+            <div class="container text-center">
+                <h2 data-gl-text>Let's Create Together</h2>
+                <div class="footer-meta">
+                    <span data-gl-text>Ray Marching · SDF · Perlin Noise · Fresnel · Three.js</span>
+                    <p class="copyright" data-gl-text>© 2026 ThoughtLab Reconstruct. Educational use only.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+        }
+    }
+    </script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>
