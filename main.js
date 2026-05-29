@@ -210,13 +210,12 @@ vec3 orthogonal(vec3 v) {
 }
 
 vec3 getDisplacedPosition(vec3 _position) {
-  float sizeRatio = max(uSize, 0.001) / 0.275;
   vec3 distoredPosition = _position;
-  float strength = uDistortionStrength * sizeRatio;
+  float strength = uDistortionStrength;
   distoredPosition += cnoise(vec3(distoredPosition * (uDistortionFrequency / uDisplacementScale) * strength + uTime));
   float perlinStrength = cnoise(vec3((distoredPosition) * (uDisplacementFrequency / uDisplacementScale) * strength));
   vec3 displacedPosition = _position;
-  displacedPosition += ((_position / 2.0) * perlinStrength * uDisplacementStrength * sizeRatio * 4.0);
+  displacedPosition += ((_position / 2.0) * perlinStrength * uDisplacementStrength * 4.0);
   return displacedPosition;
 }
 
