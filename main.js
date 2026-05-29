@@ -281,7 +281,7 @@ void main() {
     vec3 refracted = refract(vec3(0.0, 0.0, -2.0), vNormal, 1.0 / 2.0);
     screenUv += refracted.xy * uRefraction * 0.35;
 
-    vec3 cubeTex = textureCube(tMap, vec3(screenUv, 0.0)).rgb;
+    vec3 cubeTex = textureCube(tMap, vec3(screenUv, 0.0)).rgb * 1.5;
     vec3 texCube = screen(saturation(cubeTex, 5.0), vec3(0.0, 0.0, 0.0));
     vec3 texCubeFresnel = screen(mix(vec3(0.0, 0.0, 0.0), texCube, vFresnelColor), vFresnelColor);
 
@@ -316,6 +316,7 @@ void main() {
     mixed.g = mix(mix(bw.g, mixed.g, uGreenSaturation), mix(bw.g, shifted.g, uGreenSaturation), uGreenHue);
     mixed.b = mix(mix(bw.b, mixed.b, uBlueSaturation), mix(bw.b, shifted.b, uBlueSaturation), uBlueHue);
     mixed = saturation(mixed, uSaturation);
+    mixed = mixed * 1.6; // Boost overall reflection brightness to make it light and airy
 
     vec4 toImg = texture2D(tRenderHover, screenUv);
     vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
