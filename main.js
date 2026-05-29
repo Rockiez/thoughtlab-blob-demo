@@ -890,6 +890,9 @@ class WebGLApp {
     requestAnimationFrame(() => this.animate());
     if (!this.loaded) return;
 
+    // Linear interpolation helper defined at top to prevent TDZ reference errors
+    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
     this.time = this.clock.getElapsedTime();
 
     // Smoothly interpolate snap coordinates if set
@@ -898,8 +901,6 @@ class WebGLApp {
       this.mouse.y = lerp(this.mouse.y, this.snapTarget.y, 0.1);
     }
 
-    // Lerp mouse tracking coordinates
-    const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
     this.mouse1.x = lerp(this.mouse1.x, this.mouse.x, 0.05);
     this.mouse1.y = lerp(this.mouse1.y, this.mouse.y, 0.05);
     this.mouse2.x = lerp(this.mouse2.x, this.mouse1.x, 0.075);
