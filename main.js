@@ -200,9 +200,9 @@ float smin(float a, float b, float k) {
 }
 
 float sdf(vec3 p) {
-  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize - 0.045);
+  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize * 0.836);
   float sphere2 = sdSphere(p - vec3(uMouse2 * uResolution.zw * 2.0, 0.0), uSize);
-  return smin(sphere1, sphere2, 0.2);
+  return smin(sphere1, sphere2, uSize * 0.727);
 }
 
 vec3 orthogonal(vec3 v) {
@@ -275,7 +275,10 @@ void main() {
     float fresnelFactor = pow(fresnel + fresnel2, uFresnelPower);
 
     vec3 vFresnelColor = mix(vec3(0.0), vec3(1.0), clamp(pow(max(0.0, fresnel - 0.8), 3.0), 0.0, 1.0));
-    vec3 vFresnelColor2 = vec3(max((t - (tMax - 0.05)) * 1.0, 0.0));
+    float scaleFactor = 0.275 / max(uSize, 0.01);
+    float threshold1 = 0.05 / scaleFactor;
+    float threshold2 = 0.015 / scaleFactor;
+    vec3 vFresnelColor2 = vec3(max((t - (tMax - threshold1)) * scaleFactor, 0.0));
     vFresnelColor = vFresnelColor + vFresnelColor2;
 
     vec3 refracted = refract(vec3(0.0, 0.0, -2.0), vNormal, 1.0 / 2.0);
@@ -321,7 +324,7 @@ void main() {
     vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity * toImg.a);
     
     // Crisp white glass highlight at the absolute outer edge
-    vec3 extraFresnel = max(vec3((t - (tMax - 0.015)) * 45.0), vec3(0.0));
+    vec3 extraFresnel = max(vec3((t - (tMax - threshold2)) * 45.0 * scaleFactor), vec3(0.0));
     
     // Schlick's approximation for water/glass Fresnel reflection.
     float cosTheta = clamp(dot(-ray, vNormal), 0.0, 1.0);
