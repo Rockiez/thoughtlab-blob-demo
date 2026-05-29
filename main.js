@@ -441,6 +441,10 @@ class WebGLApp {
     this.snapTarget = null;
     this.snapProgress = 0.05;
 
+    // Hover Card Tracking
+    this.hoveredCard = null;
+    this.hoveredImg = null;
+
     // Sizing control
     this.targetBlobSize = W.uSizeDefault;
     this.currentBlobSize = W.uSizeDefault;
@@ -727,6 +731,9 @@ class WebGLApp {
 
       // Snap & Hover activation on cursor click/mouseenter
       card.addEventListener('mouseenter', () => {
+        this.hoveredCard = card;
+        this.hoveredImg = imgObj;
+
         const rect = card.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
@@ -746,6 +753,9 @@ class WebGLApp {
       });
 
       card.addEventListener('mouseleave', () => {
+        this.hoveredCard = null;
+        this.hoveredImg = null;
+
         this.snapTarget = null;
         this.targetHoverOpacity = 0.0;
         this.targetBlobSize = W.uSizeDefault;
@@ -847,6 +857,12 @@ class WebGLApp {
     // Smoothly transition hover image interpolation opacity
     this.currentHoverOpacity = lerp(this.currentHoverOpacity, this.targetHoverOpacity, 0.1);
     this.mat.uniforms.uRenderHoverOpacity.value = this.currentHoverOpacity;
+
+    // Redraw the hover image every frame if a card is active to keep it aligned during scrolls and snaps
+    if (this.hoveredCard && this.hoveredImg) {
+      const rect = this.hoveredCard.getBoundingClientRect();
+      this.updateHoverImageCanvas(this.hoveredImg, rect);
+    }
 
     // Update uniforms
     this.mat.uniforms.uTime.value = this.time * W.uDisplacementSpeed;
