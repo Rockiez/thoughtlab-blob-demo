@@ -866,7 +866,7 @@ class WebGLApp {
     // Layout alignment and DOM size triggers
     const glBlobEl = document.querySelector('.gl-blob') || this.container;
     const bounds = glBlobEl.getBoundingClientRect();
-    this.blob.calculatePosition(w, h, bounds.width, bounds.height, bounds.top, bounds.left, window.pageYOffset || document.documentElement.scrollTop);
+    this.blob.calculatePosition(w, h, bounds.width, bounds.height, bounds.top, bounds.left, 0);
     this.blob.updateSize(bounds.width, bounds.height, w, h);
 
     // Also update size and clear hover canvas to prevent 0x0 texture issues
@@ -939,8 +939,8 @@ class WebGLApp {
     this.mat.uniforms.uMouse2.value.copy(this.mouse2);
     this.mat.uniforms.uOpacity.value = this.opacity;
 
-    // Layout update (keeps full screen fixed overlay synchronous)
-    this.blob.update(window.pageYOffset || document.documentElement.scrollTop);
+    // Layout update (keeps full screen fixed overlay synchronous and centered)
+    this.blob.update(0);
 
     // Draw frame
     this.renderer.render(this.scene, this.camera);
