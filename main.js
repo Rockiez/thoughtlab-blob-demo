@@ -652,14 +652,35 @@ class WebGLApp {
     this.tRenderHoverCtx.fillStyle = bgColor;
     this.tRenderHoverCtx.fillRect(0, 0, w, h);
 
-    // Draw the image exactly matching the card bounding viewport box
+    // Draw the image centered at the target's center and scaled to fill the bubble
     if (imgElement && imgElement.complete) {
+      const centerX = cardRect.left + cardRect.width / 2;
+      const centerY = cardRect.top + cardRect.height / 2;
+      
+      // Dynamic bubble diameter in pixels + 20% margin to cover refraction distortion
+      const size = 2.0 * this.currentBlobSize * h * 1.2;
+      
+      // Crop square from image center (object-fit: cover behavior)
+      const imgW = imgElement.width;
+      const imgH = imgElement.height;
+      const imgAspect = imgW / imgH;
+      
+      let sx = 0, sy = 0, sWidth = imgW, sHeight = imgH;
+      if (imgAspect > 1.0) {
+        sWidth = imgH;
+        sx = (imgW - imgH) / 2;
+      } else {
+        sHeight = imgW;
+        sy = (imgH - imgW) / 2;
+      }
+      
+      const drawX = centerX - size / 2;
+      const drawY = centerY - size / 2;
+      
       this.tRenderHoverCtx.drawImage(
         imgElement,
-        cardRect.left,
-        cardRect.top,
-        cardRect.width,
-        cardRect.height
+        sx, sy, sWidth, sHeight,
+        drawX, drawY, size, size
       );
     }
     this.tRenderHoverTexture.needsUpdate = true;
