@@ -200,9 +200,9 @@ float smin(float a, float b, float k) {
 }
 
 float sdf(vec3 p) {
-  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize - 0.045);
+  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize * 0.836);
   float sphere2 = sdSphere(p - vec3(uMouse2 * uResolution.zw * 2.0, 0.0), uSize);
-  return smin(sphere1, sphere2, 0.2);
+  return smin(sphere1, sphere2, uSize * 0.727);
 }
 
 vec3 orthogonal(vec3 v) {
@@ -210,12 +210,13 @@ vec3 orthogonal(vec3 v) {
 }
 
 vec3 getDisplacedPosition(vec3 _position) {
+  float sizeRatio = max(uSize, 0.001) / 0.275;
   vec3 distoredPosition = _position;
-  float strength = uDistortionStrength;
+  float strength = uDistortionStrength * sizeRatio;
   distoredPosition += cnoise(vec3(distoredPosition * (uDistortionFrequency / uDisplacementScale) * strength + uTime));
   float perlinStrength = cnoise(vec3((distoredPosition) * (uDisplacementFrequency / uDisplacementScale) * strength));
   vec3 displacedPosition = _position;
-  displacedPosition += ((_position / 2.0) * perlinStrength * uDisplacementStrength * 4.0);
+  displacedPosition += ((_position / 2.0) * perlinStrength * uDisplacementStrength * sizeRatio * 4.0);
   return displacedPosition;
 }
 
@@ -240,7 +241,8 @@ void main() {
   vec3 ray = normalize(vec3((vUv - vec2(0.5)) * uResolution.zw, -1.0));
   float distanceMouse = distance(uMouse1, vec2(0.0)) * 0.1;
   float t = 0.0;
-  float tMax = 2.0 / (-ray.z) + 0.15;
+  float sizeRatio = max(uSize, 0.001) / 0.275;
+  float tMax = 2.0 / (-ray.z) + 0.15 * sizeRatio;
 
   // Exact 4 iterations from original decompiled code
   for (int i = 0; i < 4; ++i) {
@@ -254,6 +256,9 @@ void main() {
   vec2 screenUv = gl_FragCoord.xy / uResolution.xy;
 
   if (t < tMax) {
+    float fresnel2Offset = 0.05 * sizeRatio;
+    float extraFresnelOffset = 0.015 * sizeRatio;
+
     vec3 pos = camPos + t * ray;
     float tangentFactor = 0.005;
     vec3 normal = calcNormal(pos);
@@ -275,7 +280,7 @@ void main() {
     float fresnelFactor = pow(fresnel + fresnel2, uFresnelPower);
 
     vec3 vFresnelColor = mix(vec3(0.0), vec3(1.0), clamp(pow(max(0.0, fresnel - 0.8), 3.0), 0.0, 1.0));
-    vec3 vFresnelColor2 = vec3(max((t - (tMax - 0.05)) * 1.0, 0.0));
+    vec3 vFresnelColor2 = vec3(max((t - (tMax - fresnel2Offset)) / sizeRatio, 0.0));
     vFresnelColor = vFresnelColor + vFresnelColor2;
 
     vec3 refracted = refract(vec3(0.0, 0.0, -2.0), vNormal, 1.0 / 2.0);
@@ -318,10 +323,10 @@ void main() {
     mixed = saturation(mixed, uSaturation);
 
     vec4 toImg = texture2D(tRenderHover, screenUv);
-    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
+    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity * toImg.a);
     
-    // Crisp white glass highlight at the absolute outer edge
-    vec3 extraFresnel = max(vec3((t - (tMax - 0.015)) * 45.0), vec3(0.0));
+    // Crisp white glass highlight at the absolute outer edge (scaled to bubble size)
+    vec3 extraFresnel = max(vec3((t - (tMax - extraFresnelOffset)) * (45.0 / sizeRatio)), vec3(0.0));
     
     // Schlick's approximation for water/glass Fresnel reflection.
     float cosTheta = clamp(dot(-ray, vNormal), 0.0, 1.0);
@@ -643,14 +648,8 @@ class WebGLApp {
     this.tRenderHoverCanvas.height = h * dpr;
     this.tRenderHoverCtx.scale(dpr, dpr);
 
-    // Clear background with actual page background color
-    const bodyStyle = window.getComputedStyle(document.body);
-    let bgColor = bodyStyle.backgroundColor;
-    if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
-      bgColor = '#ffffff';
-    }
-    this.tRenderHoverCtx.fillStyle = bgColor;
-    this.tRenderHoverCtx.fillRect(0, 0, w, h);
+    // Clear background with transparent
+    this.tRenderHoverCtx.clearRect(0, 0, w, h);
 
     // Draw the image centered at the target's center and scaled to fill the bubble
     if (imgElement && imgElement.complete) {
@@ -891,13 +890,7 @@ class WebGLApp {
     // Also update size and clear hover canvas to prevent 0x0 texture issues
     this.tRenderHoverCanvas.width = w * dpr;
     this.tRenderHoverCanvas.height = h * dpr;
-    const bodyStyle = window.getComputedStyle(document.body);
-    let bgColor = bodyStyle.backgroundColor;
-    if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
-      bgColor = '#ffffff';
-    }
-    this.tRenderHoverCtx.fillStyle = bgColor;
-    this.tRenderHoverCtx.fillRect(0, 0, w, h);
+    this.tRenderHoverCtx.clearRect(0, 0, w, h);
     this.tRenderHoverTexture.needsUpdate = true;
 
     // Refresh viewport canvas projection buffer
