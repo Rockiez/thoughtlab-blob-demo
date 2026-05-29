@@ -884,11 +884,9 @@ class WebGLApp {
 
     this.mat.uniforms.uResolution.value.set(w * dpr, h * dpr, aspectX, aspectY);
 
-    // Layout alignment and DOM size triggers
-    const glBlobEl = document.querySelector('.gl-blob') || this.container;
-    const bounds = glBlobEl.getBoundingClientRect();
-    this.blob.calculatePosition(w, h, bounds.width, bounds.height, bounds.top, bounds.left, 0);
-    this.blob.updateSize(bounds.width, bounds.height, w, h);
+    // Force full screen alignment independent of DOM bounds to prevent any edge clipping
+    this.blob.calculatePosition(w, h, w, h, 0, 0, 0);
+    this.blob.updateSize(w, h, w, h);
 
     // Also update size and clear hover canvas to prevent 0x0 texture issues
     this.tRenderHoverCanvas.width = w * dpr;
