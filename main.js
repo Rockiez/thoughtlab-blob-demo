@@ -536,7 +536,7 @@ class WebGLApp {
         uResolution: { value: new THREE.Vector4() },
         uSize: { value: W.uSizeDefault },
         uOpacity: { value: 0 },
-        uZoom: { value: 0.5 },
+        uZoom: { value: 1.0 },
       }
     });
 
