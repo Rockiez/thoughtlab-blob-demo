@@ -30,7 +30,7 @@ const W = {
   uBlueHue: 0,
   mouseLamda: 0.065,
   mouseDelta: 1.25,
-  uSizeDefault: 0.275,
+  uSizeDefault: 0.14,
 };
 
 // ============================================================
@@ -200,9 +200,9 @@ float smin(float a, float b, float k) {
 }
 
 float sdf(vec3 p) {
-  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize * 0.836);
+  float sphere1 = sdSphere(p - vec3(uMouse1 * uResolution.zw * 2.0, 0.0), uSize - 0.045);
   float sphere2 = sdSphere(p - vec3(uMouse2 * uResolution.zw * 2.0, 0.0), uSize);
-  return smin(sphere1, sphere2, uSize * 0.727);
+  return smin(sphere1, sphere2, 0.2);
 }
 
 vec3 orthogonal(vec3 v) {
@@ -275,10 +275,7 @@ void main() {
     float fresnelFactor = pow(fresnel + fresnel2, uFresnelPower);
 
     vec3 vFresnelColor = mix(vec3(0.0), vec3(1.0), clamp(pow(max(0.0, fresnel - 0.8), 3.0), 0.0, 1.0));
-    float scaleFactor = 0.275 / max(uSize, 0.01);
-    float threshold1 = 0.05 / scaleFactor;
-    float threshold2 = 0.015 / scaleFactor;
-    vec3 vFresnelColor2 = vec3(max((t - (tMax - threshold1)) * scaleFactor, 0.0));
+    vec3 vFresnelColor2 = vec3(max((t - (tMax - 0.05)) * 1.0, 0.0));
     vFresnelColor = vFresnelColor + vFresnelColor2;
 
     vec3 refracted = refract(vec3(0.0, 0.0, -2.0), vNormal, 1.0 / 2.0);
@@ -321,10 +318,10 @@ void main() {
     mixed = saturation(mixed, uSaturation);
 
     vec4 toImg = texture2D(tRenderHover, screenUv);
-    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity * toImg.a);
+    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
     
     // Crisp white glass highlight at the absolute outer edge
-    vec3 extraFresnel = max(vec3((t - (tMax - threshold2)) * 45.0 * scaleFactor), vec3(0.0));
+    vec3 extraFresnel = max(vec3((t - (tMax - 0.015)) * 45.0), vec3(0.0));
     
     // Schlick's approximation for water/glass Fresnel reflection.
     float cosTheta = clamp(dot(-ray, vNormal), 0.0, 1.0);
@@ -452,12 +449,9 @@ class WebGLApp {
     this.scrollSnapTarget = null;
     this.scrollSnapImg = null;
 
-    // Sizing control and DPR
-    this.dpr = 1.0; // Force DPR to 1.0 for highly optimized raymarching shading performance on high-DPI screens
-    this.defaultSizePx = 140;
-    this.hoverCardSizePx = 130;
-    this.targetBlobSize = this.pxToSdf(this.defaultSizePx);
-    this.currentBlobSize = this.targetBlobSize;
+    // Sizing control
+    this.targetBlobSize = W.uSizeDefault;
+    this.currentBlobSize = W.uSizeDefault;
 
     // Hover Image Interpolation state
     this.targetHoverOpacity = 0.0;
@@ -472,19 +466,14 @@ class WebGLApp {
     this.init();
   }
 
-  pxToSdf(px) {
-    const w = window.innerWidth, h = window.innerHeight;
-    const maxDim = w > h ? w : h;
-    return px / maxDim;
-  }
-
   async init() {
     const w = window.innerWidth, h = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     // Renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setSize(w, h);
-    this.renderer.setPixelRatio(this.dpr);
+    this.renderer.setPixelRatio(dpr);
     this.el.appendChild(this.renderer.domElement);
 
     // Cameras
@@ -545,7 +534,7 @@ class WebGLApp {
         uMouse1: { value: new THREE.Vector2() },
         uMouse2: { value: new THREE.Vector2() },
         uResolution: { value: new THREE.Vector4() },
-        uSize: { value: this.pxToSdf(this.defaultSizePx) },
+        uSize: { value: W.uSizeDefault },
         uOpacity: { value: 0 },
         uZoom: { value: 1.0 },
       }
@@ -567,8 +556,11 @@ class WebGLApp {
     if (!this.loaded) return;
     const w = window.innerWidth;
     const h = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    this.tRenderCtx.clearRect(0, 0, w, h);
+    this.tRenderCanvas.width = w * dpr;
+    this.tRenderCanvas.height = h * dpr;
+    this.tRenderCtx.scale(dpr, dpr);
 
     // 1. Draw actual body background color (or white fallback if transparent)
     const bodyStyle = window.getComputedStyle(document.body);
@@ -645,8 +637,20 @@ class WebGLApp {
   updateHoverImageCanvas(imgElement, cardRect) {
     const w = window.innerWidth;
     const h = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    this.tRenderHoverCtx.clearRect(0, 0, w, h);
+    this.tRenderHoverCanvas.width = w * dpr;
+    this.tRenderHoverCanvas.height = h * dpr;
+    this.tRenderHoverCtx.scale(dpr, dpr);
+
+    // Clear background with actual page background color
+    const bodyStyle = window.getComputedStyle(document.body);
+    let bgColor = bodyStyle.backgroundColor;
+    if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
+      bgColor = '#ffffff';
+    }
+    this.tRenderHoverCtx.fillStyle = bgColor;
+    this.tRenderHoverCtx.fillRect(0, 0, w, h);
 
     // Draw the image centered at the target's center and scaled to fill the bubble
     if (imgElement && imgElement.complete) {
@@ -654,8 +658,7 @@ class WebGLApp {
       const centerY = cardRect.top + cardRect.height / 2;
       
       // Dynamic bubble diameter in pixels + 20% margin to cover refraction distortion
-      const maxDim = w > h ? w : h;
-      const size = this.currentBlobSize * maxDim * 1.2;
+      const size = 2.0 * this.currentBlobSize * h * 1.2;
       
       // Crop square from image center (object-fit: cover behavior)
       const imgW = imgElement.width;
@@ -770,7 +773,7 @@ class WebGLApp {
         if (imgObj) {
           this.updateHoverImageCanvas(imgObj, rect);
           this.targetHoverOpacity = 1.0;
-          this.targetBlobSize = this.pxToSdf(this.hoverCardSizePx);
+          this.targetBlobSize = W.BlobSizeHover * W.uSizeDefault;
         }
       });
 
@@ -780,7 +783,7 @@ class WebGLApp {
 
         this.snapTarget = null;
         this.targetHoverOpacity = 0.0;
-        this.targetBlobSize = this.pxToSdf(this.defaultSizePx);
+        this.targetBlobSize = W.uSizeDefault;
       });
     });
 
@@ -798,19 +801,16 @@ class WebGLApp {
     if (this.hoveredCard) return;
 
     const sections = document.querySelectorAll('[data-gl-size]');
-    const w = window.innerWidth, h = window.innerHeight;
-    const maxDim = w > h ? w : h;
-    
-    let activeSize = this.pxToSdf(this.defaultSizePx);
+    let activeSize = W.uSizeDefault;
     let newScrollSnapTarget = null;
     let snapImgObj = null;
 
     sections.forEach(sec => {
       const rect = sec.getBoundingClientRect();
       // Check if section is active (taking up the middle band of the viewport)
-      if (rect.top < h * 0.6 && rect.bottom > h * 0.4) {
+      if (rect.top < window.innerHeight * 0.6 && rect.bottom > window.innerHeight * 0.4) {
         const sizeVal = parseFloat(sec.getAttribute('data-gl-size'));
-        activeSize = this.pxToSdf(this.defaultSizePx * (sizeVal / 3.0));
+        activeSize = sizeVal / 10.0;
 
         // Check for scroll-snap target in active section
         const snapSelector = sec.getAttribute('data-gl-scroll-snap');
@@ -844,15 +844,14 @@ class WebGLApp {
       const centerY = rect.top + rect.height / 2;
       
       this.snapTarget = new THREE.Vector2(
-        centerX / w - 0.5,
-        -(centerY / h) + 0.5
+        centerX / window.innerWidth - 0.5,
+        -(centerY / window.innerHeight) + 0.5
       );
       
       if (snapImgObj) {
         this.updateHoverImageCanvas(snapImgObj, rect);
         this.targetHoverOpacity = 1.0;
-        // Snap target bubble size dynamically matches the target element's actual CSS width (e.g. 280px)
-        this.targetBlobSize = this.pxToSdf(rect.width);
+        this.targetBlobSize = W.BlobSizeHover * activeSize;
       }
     } else {
       if (this.scrollSnapTarget) {
@@ -867,6 +866,7 @@ class WebGLApp {
   resize() {
     if (!this.loaded) return;
     const w = window.innerWidth, h = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
     this.renderer.setSize(w, h);
     this.camera.resize(w, h);
@@ -882,22 +882,15 @@ class WebGLApp {
       aspectY = h / w / imageAspect;
     }
 
-    this.mat.uniforms.uResolution.value.set(w * this.dpr, h * this.dpr, aspectX, aspectY);
+    this.mat.uniforms.uResolution.value.set(w * dpr, h * dpr, aspectX, aspectY);
 
     // Force full screen alignment independent of DOM bounds to prevent any edge clipping
     this.blob.calculatePosition(w, h, w, h, 0, 0, 0);
     this.blob.updateSize(w, h, w, h);
 
-    // Resize canvases and reset scaling once on resize
-    this.tRenderCanvas.width = w * this.dpr;
-    this.tRenderCanvas.height = h * this.dpr;
-    this.tRenderCtx.scale(this.dpr, this.dpr);
-
-    this.tRenderHoverCanvas.width = w * this.dpr;
-    this.tRenderHoverCanvas.height = h * this.dpr;
-    this.tRenderHoverCtx.scale(this.dpr, this.dpr);
-
-    // Clear hover canvas background to prevent 0x0 issues
+    // Also update size and clear hover canvas to prevent 0x0 texture issues
+    this.tRenderHoverCanvas.width = w * dpr;
+    this.tRenderHoverCanvas.height = h * dpr;
     const bodyStyle = window.getComputedStyle(document.body);
     let bgColor = bodyStyle.backgroundColor;
     if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
