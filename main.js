@@ -318,7 +318,7 @@ void main() {
     mixed = saturation(mixed, uSaturation);
 
     vec4 toImg = texture2D(tRenderHover, screenUv);
-    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
+    vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity * toImg.a);
     
     // Crisp white glass highlight at the absolute outer edge
     vec3 extraFresnel = max(vec3((t - (tMax - 0.015)) * 45.0), vec3(0.0));
@@ -644,15 +644,6 @@ class WebGLApp {
     const h = window.innerHeight;
 
     this.tRenderHoverCtx.clearRect(0, 0, w, h);
-
-    // Clear background with actual page background color
-    const bodyStyle = window.getComputedStyle(document.body);
-    let bgColor = bodyStyle.backgroundColor;
-    if (!bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)') {
-      bgColor = '#ffffff';
-    }
-    this.tRenderHoverCtx.fillStyle = bgColor;
-    this.tRenderHoverCtx.fillRect(0, 0, w, h);
 
     // Draw the image centered at the target's center and scaled to fill the bubble
     if (imgElement && imgElement.complete) {
