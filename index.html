@@ -32,6 +32,28 @@
         const msg = Array.from(arguments).join(' ');
         debugDiv.innerHTML += `<div style="color:#ff6b6b;margin-bottom:3px;">[ERROR] ${msg}</div>`;
       };
+
+      // Layout debugging monitor
+      const checkLayout = () => {
+        const gl = document.getElementById('gl');
+        const canvas = gl ? gl.querySelector('canvas') : null;
+        const glBlob = document.querySelector('.gl-blob');
+        
+        if (gl) {
+          const r = gl.getBoundingClientRect();
+          console.warn(`[Layout] #gl size: ${r.width}x${r.height} | top: ${r.top}, left: ${r.left}`);
+        }
+        if (canvas) {
+          const r = canvas.getBoundingClientRect();
+          console.warn(`[Layout] canvas size: ${r.width}x${r.height} | top: ${r.top}, left: ${r.left}`);
+        }
+        if (glBlob) {
+          const r = glBlob.getBoundingClientRect();
+          console.warn(`[Layout] gl-blob size: ${r.width}x${r.height} | top: ${r.top}, left: ${r.left}`);
+        }
+      };
+      window.addEventListener('load', () => setTimeout(checkLayout, 1000));
+      window.addEventListener('resize', checkLayout);
     });
     </script>
 </head>
