@@ -327,15 +327,20 @@ void main() {
     float cosTheta = clamp(dot(-ray, vNormal), 0.0, 1.0);
     float waterFresnel = 0.04 + 0.96 * pow(1.0 - cosTheta, 5.0);
     
+    // Use the original reflection strength (before lifting) as the weight.
+    // This prevents the ambient light lift from increasing the mix weight, 
+    // ensuring the white background is not darkened.
+    float mixWeight = clamp(length(mixed + extraFresnel), 0.0, 1.0);
+
     // Add soft ambient light to the reflections to simulate a bright room environment,
     // lifting the dark tones and giving the bubble an airy, translucent appearance.
-    vec3 brightMixed = mix(mixed, vec3(0.95), 0.15);
+    vec3 brightMixed = mix(mixed, vec3(0.95), 0.25);
     
     // Adapt the environment reflections to the background color. Since the cubemap environment 
     // is dark/black, reflecting it directly on a light background causes dark rings.
     // By blending the reflection base with the page background based on the reflection intensity,
     // we preserve the beautiful colored highlights (blue/purple) while removing the black base.
-    vec3 reflectionColor = mix(background, brightMixed + extraFresnel, clamp(length(brightMixed + extraFresnel), 0.0, 1.0));
+    vec3 reflectionColor = mix(background, brightMixed + extraFresnel, mixWeight);
     
     vec3 mixedBackground = mix(background, reflectionColor, waterFresnel);
 
