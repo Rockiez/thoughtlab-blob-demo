@@ -320,6 +320,11 @@ void main() {
     vec4 toImg = texture2D(tRenderHover, screenUv);
     vec3 background = mix(refractedColor, toImg.rgb, uRenderHoverOpacity);
     
+    // Add a very subtle cool glass volume tint (5% ice-blue) to make the bubble
+    // visible on pure white empty spaces, while keeping it clean and translucent.
+    vec3 glassTint = vec3(0.95, 0.97, 1.0);
+    vec3 tintedBackground = mix(background, glassTint, 0.05);
+    
     // Crisp white glass highlight at the absolute outer edge
     vec3 extraFresnel = max(vec3((t - 2.135) * 45.0), vec3(0.0));
     
@@ -328,21 +333,16 @@ void main() {
     float waterFresnel = 0.04 + 0.96 * pow(1.0 - cosTheta, 5.0);
     
     // Use the original reflection strength (before lifting) as the weight.
-    // This prevents the ambient light lift from increasing the mix weight, 
-    // ensuring the white background is not darkened.
     float mixWeight = clamp(length(mixed + extraFresnel), 0.0, 1.0);
 
     // Add soft ambient light to the reflections to simulate a bright room environment,
     // lifting the dark tones and giving the bubble an airy, translucent appearance.
     vec3 brightMixed = mix(mixed, vec3(0.95), 0.25);
     
-    // Adapt the environment reflections to the background color. Since the cubemap environment 
-    // is dark/black, reflecting it directly on a light background causes dark rings.
-    // By blending the reflection base with the page background based on the reflection intensity,
-    // we preserve the beautiful colored highlights (blue/purple) while removing the black base.
-    vec3 reflectionColor = mix(background, brightMixed + extraFresnel, mixWeight);
+    // Adapt the environment reflections to the background color.
+    vec3 reflectionColor = mix(tintedBackground, brightMixed + extraFresnel, mixWeight);
     
-    vec3 mixedBackground = mix(background, reflectionColor, waterFresnel);
+    vec3 mixedBackground = mix(tintedBackground, reflectionColor, waterFresnel);
 
     finalColor.rgb = mixedBackground;
     finalColor.a = 1.0;
@@ -917,15 +917,20 @@ class WebGLApp {
     this.time = this.clock.getElapsedTime();
 
     // Smoothly interpolate snap coordinates if set
+    let lerpSpeed1 = 0.05;
+    let lerpSpeed2 = 0.075;
     if (this.snapTarget) {
-      this.mouse.x = lerp(this.mouse.x, this.snapTarget.x, 0.1);
-      this.mouse.y = lerp(this.mouse.y, this.snapTarget.y, 0.1);
+      // Snapping active: accelerate interpolation to track targets with high precision (especially during scrolling)
+      this.mouse.x = lerp(this.mouse.x, this.snapTarget.x, 0.25);
+      this.mouse.y = lerp(this.mouse.y, this.snapTarget.y, 0.25);
+      lerpSpeed1 = 0.18;
+      lerpSpeed2 = 0.14;
     }
 
-    this.mouse1.x = lerp(this.mouse1.x, this.mouse.x, 0.05);
-    this.mouse1.y = lerp(this.mouse1.y, this.mouse.y, 0.05);
-    this.mouse2.x = lerp(this.mouse2.x, this.mouse1.x, 0.075);
-    this.mouse2.y = lerp(this.mouse2.y, this.mouse1.y, 0.075);
+    this.mouse1.x = lerp(this.mouse1.x, this.mouse.x, lerpSpeed1);
+    this.mouse1.y = lerp(this.mouse1.y, this.mouse.y, lerpSpeed1);
+    this.mouse2.x = lerp(this.mouse2.x, this.mouse1.x, lerpSpeed2);
+    this.mouse2.y = lerp(this.mouse2.y, this.mouse1.y, lerpSpeed2);
 
     // Smoothly transition blob size on scroll triggers
     this.currentBlobSize = lerp(this.currentBlobSize, this.targetBlobSize, 0.05);
